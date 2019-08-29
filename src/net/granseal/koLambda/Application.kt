@@ -19,6 +19,7 @@ abstract class Application(val title: String, val width: Int, val height: Int, u
     private var framesTimer = 0.0
     private var updateTimer = 0.0
     var backgroundColor: Color = Color.BLACK
+    var timePassed = 0.0
 
     var fixedFPS = 120
         set(value) {
@@ -70,10 +71,12 @@ abstract class Application(val title: String, val width: Int, val height: Int, u
         }
         val keyAdapter = object: KeyAdapter(){
             override fun keyPressed(e: KeyEvent) {
+                Input.keysPressed[e.extendedKeyCode]?.press()
                 Input.heldKeysCode[e.extendedKeyCode] = true
                 this@Application.keyPressed(e)
             }
             override fun keyReleased(e: KeyEvent) {
+                Input.keysPressed[e.extendedKeyCode]?.reset()
                 Input.heldKeysCode[e.extendedKeyCode] = false
                 this@Application.keyReleased(e)
             }
@@ -116,9 +119,11 @@ abstract class Application(val title: String, val width: Int, val height: Int, u
         logger.info("Starting")
 
         while(started){
+            if (!window.isFocusOwner)window.requestFocusInWindow()
             val delta = timer.delta()
             framesTimer += delta
             updateTimer += delta
+            timePassed += delta
             if (updateTimer >= timePerFrame) {
                 updateTimer -= timePerFrame
                 val frameDelta = frameTimer.delta()
@@ -185,11 +190,38 @@ abstract class Application(val title: String, val width: Int, val height: Int, u
 }
 
 object Input {
+    class KeyLatch{
+        private var consumed = false
+        private var pressed = false
+        fun reset(){
+            consumed = false
+            pressed = false
+        }
+        fun consume(): Boolean {
+            return if (!pressed){
+                false
+            }else{
+                pressed = false
+                consumed = true
+                true
+            }
+        }
+        fun press(){
+            if (!consumed){
+                pressed = true
+            }
+        }
+    }
     var mouseWheelDelta = 0.0
     var mouse = MouseStuff()
     internal var heldKeysCode = mutableMapOf<Int,Boolean>()
+    internal var keysPressed =( 0..500).map { it to KeyLatch()}.toMap()
     fun keyHeld(c: Char) = keyHeld(KeyEvent.getExtendedKeyCodeForChar(c.toInt()))
     fun keyHeld(code: Int) = heldKeysCode.getOrDefault(code, false)
+    fun keyPressed(c: Char) = keyPressed(KeyEvent.getExtendedKeyCodeForChar(c.toInt()))
+    fun keyPressed(code: Int): Boolean {
+        return keysPressed[code]?.consume() ?: false
+    }
     data class MouseStuff(var x: Float = 0f, var y: Float = 0f, var screenX: Float = 0f, var screenY: Float = 0f){
         val buttonsHeld = mutableMapOf<Int,Boolean>()
         init {

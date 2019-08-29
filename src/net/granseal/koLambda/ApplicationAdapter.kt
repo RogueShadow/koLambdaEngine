@@ -13,11 +13,7 @@ open class ApplicationAdapter(title: String = "koLambda Engine", width: Int = 80
     override fun mousePressed(e: MouseEvent) {sceneRoot.click(e)}
     override fun mouseClicked(e: MouseEvent) {sceneRoot.click(e)}
     override fun mouseReleased(e: MouseEvent) {sceneRoot.click(e)}
-    override fun keyPressed(e: KeyEvent) {
-        if (e.keyCode == KeyEvent.VK_ESCAPE){
-            close()
-        }
-    }
+    override fun keyPressed(e: KeyEvent) {}
     override fun keyReleased(e: KeyEvent) {}
     override fun keyTyped(e: KeyEvent) {}
 }
