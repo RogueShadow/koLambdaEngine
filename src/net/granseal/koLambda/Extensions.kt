@@ -1,25 +1,20 @@
 package net.granseal.koLambda
 
 import java.awt.Point
-import java.awt.geom.Point2D
+import java.awt.geom.Point2D.Float as F2
 
-operator fun Point2D.Float.plusAssign(other: Point2D.Float) {
-    x += other.x
-    y += other.y
+infix operator fun F2.plusAssign(other: F2) {
+    this.setLocation(this + other)
 }
-operator fun Point2D.Float.plus(other: Point2D.Float): Point2D.Float {
-    return Point2D.Float(this.x + other.x,this.y + other.y)
+infix operator fun F2.times(other: Float): F2 {
+    return F2(this.x*other,this.y*other)
 }
-
-operator fun Point2D.Float.times(other: Float): Point2D.Float {
-    val p = Point2D.Float()
-    p.setLocation(x * other.toDouble(), y * other.toDouble())
-    return p
+infix operator fun F2.plus(other: F2): F2 {
+    return F2(this.x+other.x,this.y+other.y)
 }
-
-operator fun Point2D.minus(other: Point2D.Float): Point2D.Float {
-    return Point2D.Float(x.toFloat() - other.x, y.toFloat() - other.y)
+infix operator fun F2.minus(other: F2): F2 {
+    return F2(this.x-other.x,this.y-other.y)
 }
-fun Point.toFloat(): Point2D.Float {
-    return Point2D.Float(x.toFloat(),y.toFloat())
+fun Point.toFloat(): F2 {
+    return F2(x.toFloat(), y.toFloat())
 }

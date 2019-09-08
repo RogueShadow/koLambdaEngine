@@ -8,6 +8,6 @@ const val V_BUILD = 0
 
 const val VERSION = "$V_MAJOR.$V_MINOR.$V_BUILD"
 
-const val MOUSE_B1 = MouseEvent.BUTTON1
-const val MOUSE_B2 = MouseEvent.BUTTON2
-const val MOUSE_B3 = MouseEvent.BUTTON3
+const val MOUSE_BTN_LEFT = MouseEvent.BUTTON1
+const val MOUSE_BTN_MIDDLE = MouseEvent.BUTTON2
+const val MOUSE_BTN_RIGHT = MouseEvent.BUTTON3

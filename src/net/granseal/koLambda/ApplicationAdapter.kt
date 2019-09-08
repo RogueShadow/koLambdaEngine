@@ -7,8 +7,18 @@ import java.awt.event.MouseEvent
 open class ApplicationAdapter(title: String = "koLambda Engine", width: Int = 800, height: Int = 600,undecorated: Boolean = false): Application(title,width,height,undecorated) {
     var sceneRoot = Entity()
     override fun init() {}
-    override fun update(delta: Float) {sceneRoot.update(delta)}
-    override fun draw(g: Graphics2D) {clear();sceneRoot.draw(g)}
+    override fun update(delta: Float) {
+        sceneRoot.update(delta)
+        ParticleManager.update(delta)
+    }
+    override fun draw(g: Graphics2D) {
+        clear()
+        sceneRoot.draw(g)
+        val old = g.transform
+        g.transform = sceneRoot.getWorldTransform()
+        ParticleManager.draw(g)
+        g.transform = old
+    }
     override fun dispose() {}
     override fun mousePressed(e: MouseEvent) {sceneRoot.click(e)}
     override fun mouseClicked(e: MouseEvent) {sceneRoot.click(e)}

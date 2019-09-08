@@ -6,9 +6,11 @@ import java.awt.geom.Rectangle2D
 import java.io.File
 import java.io.InputStream
 import java.net.URL
+import kotlin.math.abs
+import kotlin.random.Random
 import kotlin.system.exitProcess
 
-
+fun point(x: Double,y: Double) = point(x.toFloat(),y.toFloat())
 fun point(x: Float, y: Float) = Point2D.Float(x,y)
 fun point() = point(0f, 0f)
 fun rect(x: Float = 0f,y: Float = 0f, w: Float = 0f, h: Float = 0f) = Rectangle2D.Float(x,y,w,h)
@@ -62,56 +64,6 @@ fun getResource(file: String): URL = ::ApplicationAdapter.javaClass.getResource(
 fun getReader(file: String) = getStream(file).reader()
 fun getBufReader(file: String) = getStream(file).bufferedReader()
 
-fun lerp(values: List<Float>,percent: Float, loop: Boolean = false, e: (Float) -> Float = ::Linear): Float {
-    var p = percent
-    if (loop) p = percent % 1
-    if (values.size == 1)return values.first()
-    if (values.isEmpty())throw Exception("values must have at least one value.")
-
-    val percent2 = p * values.size
-    val index = percent2.toInt()
-    val remainder = percent2 - index
-    if (!loop) {
-        if (index >= values.size - 1) return values.last()
-        return interpolate(values[index], values[index + 1], remainder,e)
-    }else{
-        if (index >= values.size && !loop)return values.last()
-        if (index >= values.size && loop)return values.first()
-        val v1 = values[index]
-        return if (index >= values.size -1){
-            val v2 = values[0]
-            interpolate(v1,v2,remainder,e)
-        }else{
-            val v2 = values[index+1]
-            interpolate(v1,v2,remainder,e)
-        }
-    }
-}
-
-fun lerp(colors: List<Color>, percent: Float, loop: Boolean = false, e: (Float) -> Float = ::Linear): Color {
-    val fRGB = colors.map { it.getColorComponents(null)}
-    val r = fRGB.map { it[0] }
-    val g = fRGB.map { it[1] }
-    val b = fRGB.map { it[2] }
-    val ir = lerp(r,percent,loop,e)
-    val ig = lerp(g,percent,loop,e)
-    val ib = lerp(b,percent,loop,e)
-    return Color(clamp(ir,0f,1f),clamp(ig,0f,1f),clamp(ib,0f,1f))
-}
-
-fun lerp(points: List<Point2D.Float>, percent: Float, loop: Boolean = false, e: (Float) -> Float = ::Linear): Point2D.Float {
-    val x = points.map{ it.x }
-    val y = points.map{ it.y }
-    val ix = lerp(x,percent,loop,e)
-    val iy = lerp(y,percent,loop,e)
-    return point(ix,iy)
-}
-
-
-inline fun interpolate(start: Float, end: Float, percent: Float, e: (Float) -> Float = ::Linear): Float {
-    return start + (e(percent) * (end - start))
-}
-
 fun <T: Comparable<T>> clamp(value: T, min: T, max: T): T {
     if (value < min) return min
     if (value > max)return max
@@ -126,4 +78,210 @@ fun SmoothStop2(t: Float) = 1 - (1-t)*(1-t)*(1-t)
 
 fun <T> List<List<T>>.get(p: Point2D): T {
     return this[p.y.toInt()][p.x.toInt()]
+}
+
+class AnimateColor(private val values: List<Color>, var loopType: Int, var duration: Float): IAnimation<Color> {
+    init {
+        assert(values.isNotEmpty())
+        assert(values.size >= 2)
+    }
+    private val colors = values.map{it.getColorComponents(null)}
+    private val r = AnimateFloat(colors.map { it[0] },loopType,duration)
+    private val g = AnimateFloat(colors.map { it[1] },loopType,duration)
+    private val b = AnimateFloat(colors.map { it[2] },loopType,duration)
+
+    override fun reset() {
+        r.reset()
+        g.reset()
+        b.reset()
+    }
+
+    override fun setProgress(value: Float) {
+        r.setProgress(value)
+        g.setProgress(value)
+        b.setProgress(value)
+    }
+
+    override fun update(delta: Float) {
+        r.update(delta)
+        g.update(delta)
+        b.update(delta)
+    }
+
+    override fun value(): Color {
+        return Color(r.value(),g.value(),b.value())
+    }
+
+    override fun begin(): Color {
+        return Color(r.begin(),g.begin(),b.begin())
+    }
+
+    override fun end(): Color {
+        return Color(r.end(),g.end(),b.end())
+    }
+
+    override fun finished(): Boolean {
+        return r.finished()
+    }
+
+    override fun loopCount(): Int {
+        return r.loopCount()
+    }
+}
+
+class AnimatePoint(private val values: List<Point2D.Float>, var loopType: Int, var duration: Float): IAnimation<Point2D.Float> {
+    init {
+        assert(values.isNotEmpty())
+        assert(values.size >= 2)
+    }
+    constructor(start: Point2D.Float, end: Point2D.Float, loopType: Int, duration: Float): this(listOf(start,end),loopType,duration)
+
+    private val x = values.map { it.x }
+    private val y = values.map { it.y }
+    private val aniX = AnimateFloat(x,loopType,duration)
+    private val aniY = AnimateFloat(y,loopType,duration)
+
+    override fun reset() {
+        aniX.reset()
+        aniY.reset()
+    }
+
+    override fun setProgress(value: Float) {
+        aniX.setProgress(value)
+        aniY.setProgress(value)
+    }
+
+    override fun update(delta: Float) {
+        aniX.update(delta)
+        aniY.update(delta)
+    }
+
+    override fun value(): Point2D.Float {
+        return point(aniX.value(),aniY.value())
+    }
+
+    override fun begin(): Point2D.Float {
+        return point(aniX.begin(),aniY.begin())
+    }
+
+    override fun end(): Point2D.Float {
+        return point(aniX.end(),aniY.end())
+    }
+
+    override fun finished(): Boolean {
+        return aniX.finished()
+    }
+
+    override fun loopCount(): Int {
+        return aniX.loopCount()
+    }
+}
+
+interface IAnimation<T> {
+    fun reset()
+    fun setProgress(value: Float)
+    fun update(delta: Float)
+    fun value(): T
+    fun begin(): T
+    fun end(): T
+    fun finished(): Boolean
+    fun loopCount(): Int
+}
+
+class AnimateFloat(private val values:  List<Float>, var loopType: Int, var duration: Float): IAnimation<Float> {
+    init {
+        assert(values.isNotEmpty())
+        assert(values.size >= 2)
+    }
+    constructor(start: Float, end: Float, loopType: Int, duration: Float): this(listOf<Float>(start,end),loopType, duration)
+
+    private var direction = 1f
+    private var loopCount = 0
+    private var playing = true
+    private var inverseDuration = 1f/duration
+    private var progress: Float = 0f
+    private fun internalMax() = values.size -1
+    private fun internalProgress() = progress * (internalMax())
+
+    override fun reset() {
+        progress = 0f
+        direction = 1f
+        loopCount = 0
+        playing = true
+    }
+
+    override fun update(delta: Float) {
+        if (playing)progress += delta * direction * inverseDuration
+
+        if (internalProgress() >= internalMax()){
+            when (loopType){
+                0 -> {
+                    playing = false
+                    progress = 1f
+                    loopCount = 1
+                }
+                1 -> {
+                    progress -= 1f
+                    loopCount += 1
+                }
+                2 -> {
+                    direction *= -1
+                    progress = 1f
+                }
+                3 -> {
+                    direction *= -1
+                    progress = 1f
+                }
+            }
+        }
+        if (internalProgress() < 0){
+            when(loopType){
+                0 -> throw Exception("Going backwards in once mode.")
+                1 -> throw Exception("Going backwards in forward mode.")
+                2 -> {
+                    playing = false
+                    progress = 0f
+                    loopCount = 1
+                }
+                3 -> {
+                    direction *= -1
+                    progress = 0f
+                    loopCount += 1
+                }
+            }
+        }
+    }
+
+    override fun value(): Float {
+        if (internalProgress() >= internalMax())return end()
+        if (internalProgress() <= 0)return begin()
+        val firstValueIndex =  (internalProgress()).toInt()
+        val progressThisStep = internalProgress() - (internalProgress()).toInt()
+        return interpolate(values[firstValueIndex] ,values[firstValueIndex+1], progressThisStep)
+    }
+
+    override fun setProgress(value: Float) { progress = abs(value % 1f) }
+    override fun begin() = values.first()
+    override fun end() = values.last()
+    override fun finished() = !playing
+    override fun loopCount() = loopCount
+}
+
+fun interpolate(start: Float, end: Float, progress: Float): Float {
+    return start + (end - start) * progress
+}
+
+class Noise1d(val width: Int) {
+    val rand = Random(System.nanoTime())
+    val noise = (0..width).map { rand.nextFloat()}
+
+    fun noise(x: Float): Float {
+        val start = if (x <= 0) 0 else x.toInt()
+        val end = if (x >= width) width-1 else x.toInt() + 1
+        return lerp(noise[start],noise[end],x - x.toInt())
+    }
+
+    fun lerp(start: Float, end: Float, percent: Float): Float {
+        return start + (end - start) * percent
+    }
 }

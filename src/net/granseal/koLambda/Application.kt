@@ -34,6 +34,7 @@ abstract class Application(val title: String, val width: Int, val height: Int, u
         }
     private var timePerFrame = 1f / fixedFPS
     private lateinit var bufferGraphics: Graphics2D
+    fun getGraphics() = bufferGraphics
 
     init {
         logger.log(Level.INFO,"Initializing")
@@ -105,10 +106,10 @@ abstract class Application(val title: String, val width: Int, val height: Int, u
     fun start(){
         window.createBufferStrategy(2)
         bufferGraphics = window.bufferStrategy.drawGraphics as Graphics2D
-        bufferGraphics.addRenderingHints(mapOf(
-                Pair(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON),
-                Pair(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC),
-                Pair(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)))
+//        bufferGraphics.addRenderingHints(mapOf(
+//                Pair(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON),
+//                Pair(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC),
+//                Pair(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)))
         root.isVisible = true
         window.isVisible = true
         window.requestFocusInWindow()

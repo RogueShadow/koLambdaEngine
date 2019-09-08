@@ -1,6 +1,7 @@
 package net.granseal.koLambda
 
 import java.awt.*
+import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import java.awt.geom.AffineTransform
 import java.awt.geom.Point2D
@@ -15,13 +16,15 @@ open class Entity(var pos: Point2D.Float = point()) {
     val children = mutableListOf<Entity>()
     val updaters = mutableListOf<Entity.(Float) -> Unit>()
     val drawers = mutableListOf<Entity.(Graphics2D) -> Unit>()
-    var clickHandler: ((MouseEvent) -> Boolean)? = null
+    var clickHandler: ((MouseEvent, Point2D) -> Boolean)? = null
     var scale = 1.0
     var rotation = 0.0
     var transform = AffineTransform()
     var inheritRotation = false
     var inheritScale = true
     var inheritPosition = true
+    var updating = false
+    var hasFocus = false
 
     fun getLocalTransform(loc: Boolean = true, rot: Boolean = true, s: Boolean = true): AffineTransform {
         transform.setToIdentity()
@@ -52,7 +55,7 @@ open class Entity(var pos: Point2D.Float = point()) {
         g.transform = getWorldTransform()
         components.forEach { it.draw(g) }
         drawers.forEach { it(g) }
-        children.forEach { it.draw(g) }
+        children.toList().forEach { it.draw(g) }
         g.transform = saved
     }
 
@@ -83,11 +86,27 @@ open class Entity(var pos: Point2D.Float = point()) {
         var handled = false
         filtered.reversed().forEach {
             if (it.clickHandler != null && !handled){
-                handled = it.clickHandler?.invoke(event)!!
+                val clickPos = it.getWorldTransform().inverseTransform(event.point,null)
+                handled = it.clickHandler?.invoke(event,point(clickPos.x.toFloat() - bounds.x.toFloat(),clickPos.y.toFloat() - bounds.y.toFloat()))!!
             }
         }
 
         return handled
+    }
+
+    // TODO Make this work
+    fun keyEvent(event: KeyEvent): Boolean{
+        val entities = getAll()
+        var handled = false
+        val focused = entities.filter { it.hasFocus }
+        if (focused.isNotEmpty()){
+            return focused.first().keyEvent(event)
+        }else{
+            entities.forEach{
+                if (it.keyEvent(event))return true
+            }
+        }
+        return false
     }
 
     fun getActualBounds(): Rectangle {
